@@ -1,0 +1,21 @@
+# Terraform
+**/.terraform/
+**/.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Local vars and creds
+*.tfvars
+*.auto.tfvars
+!.example.tfvars   # keep example files
+
+# Keys / misc
+*.pem
+*.pfx
+*.key
+.env

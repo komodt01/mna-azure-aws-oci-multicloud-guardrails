@@ -1,0 +1,17 @@
+// Flags resource creations without a Customer-Managed Key (CMEK).
+AzureActivity
+| where OperationNameValue has_any ("Microsoft.Storage/storageAccounts/write", "Microsoft.DBfor")
+| where ActivityStatusValue == "Success"
+| where Properties !has "encryption" or Properties !has "keyVaultProperties"
+| project TimeGenerated, Caller, OperationNameValue, ResourceGroup, Resource, SubscriptionId
+| union isfuzzy=true (
+AWSCloudTrail
+| where EventName == "CreateBucket"
+| project TimeGenerated, UserIdentityArn, EventName, requestParameters, awsRegion, RecipientAccountId
+)
+| union isfuzzy=true (
+GenericJson_CL
+| where tostring(Service) == "objectstorage" and tostring(EventName) == "CreateBucket"
+| where tostring(RequestParameters) !has "kmsKeyId"
+| project TimeGenerated, User, EventName, CompartmentId, BucketName
+)

@@ -1,0 +1,15 @@
+// Flags potential public storage exposure (Azure/AWS/OCI) based on audit events and config changes.
+AzureActivity
+| where OperationNameValue has_any ("SetBlobServiceProperties", "SetFileServiceProperties", "SetPublicNetworkAccess")
+| where ActivityStatusValue == "Success"
+| project TimeGenerated, Caller, OperationNameValue, ResourceGroup, Resource, SubscriptionId
+| union isfuzzy=true (
+AWSCloudTrail
+| where EventName in ("PutBucketAcl", "PutBucketPolicy", "PutPublicAccessBlock")
+| project TimeGenerated, UserIdentityArn, EventName, requestParameters, awsRegion, RecipientAccountId
+)
+| union isfuzzy=true (
+GenericJson_CL
+| where tostring(Service) == "objectstorage" and (tostring(EventName) has "UpdateBucket" or tostring(EventName) has "CreatePreauthenticatedRequest")
+| project TimeGenerated, User, EventName, CompartmentId, BucketName
+)
