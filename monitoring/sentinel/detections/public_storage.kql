@@ -1,15 +1,30 @@
-// Flags potential public storage exposure (Azure/AWS/OCI) based on audit events and config changes.
+// REFERENCE DETECTION — NOT A PRODUCTION ANALYTIC RULE
+//
+// Purpose:
+// Illustrates how Microsoft Sentinel could identify Azure storage
+// configuration activity associated with potential public exposure.
+//
+// Architecture dependency:
+// AWS and OCI telemetry would require separate ingestion and normalization
+// before equivalent multi-cloud detection logic could be implemented.
+//
+// This query identifies configuration activity for investigation.
+// It does not independently prove that a resource is publicly accessible.
+
 AzureActivity
-| where OperationNameValue has_any ("SetBlobServiceProperties", "SetFileServiceProperties", "SetPublicNetworkAccess")
 | where ActivityStatusValue == "Success"
-| project TimeGenerated, Caller, OperationNameValue, ResourceGroup, Resource, SubscriptionId
-| union isfuzzy=true (
-AWSCloudTrail
-| where EventName in ("PutBucketAcl", "PutBucketPolicy", "PutPublicAccessBlock")
-| project TimeGenerated, UserIdentityArn, EventName, requestParameters, awsRegion, RecipientAccountId
+| where OperationNameValue has_any (
+    "Microsoft.Storage/storageAccounts",
+    "SetBlobServiceProperties",
+    "SetFileServiceProperties",
+    "SetPublicNetworkAccess"
 )
-| union isfuzzy=true (
-GenericJson_CL
-| where tostring(Service) == "objectstorage" and (tostring(EventName) has "UpdateBucket" or tostring(EventName) has "CreatePreauthenticatedRequest")
-| project TimeGenerated, User, EventName, CompartmentId, BucketName
-)
+| project
+    TimeGenerated,
+    Cloud = "Azure",
+    Caller,
+    OperationNameValue,
+    ResourceGroup,
+    Resource,
+    SubscriptionId
+| order by TimeGenerated desc
