@@ -1,25 +1,33 @@
-// REFERENCE DETECTION — NOT A PRODUCTION ANALYTIC RULE
+// IMPLEMENTED SENTINEL DETECTION
+//
+// Source:
+// terraform/azure/sentinel.tf
 //
 // Purpose:
-// Illustrates how a centralized SIEM could identify storage resources
-// that may not meet an enterprise customer-managed-key requirement.
+// Identifies successful Azure Storage configuration changes that may
+// affect public exposure.
 //
-// Architecture dependency:
-// AWS and OCI telemetry must first be ingested and normalized into
-// Microsoft Sentinel. That ingestion pipeline is outside the implemented
-// scope of this repository.
+// The event itself does not prove that a storage resource is publicly
+// accessible. It creates an investigation signal for security review.
 //
-// This query is intentionally illustrative because encryption properties,
-// schemas, and event structures vary by cloud and ingestion method.
+// Investigation flow:
+// Configuration event -> Potential condition -> Investigation
+// -> Validated exposure -> Remediation or approved exception
+//
+// Scope:
+// Azure telemetry only. AWS and OCI telemetry ingestion into Microsoft
+// Sentinel is not implemented in this repository.
 
-// Azure example: identify successful storage configuration activity
-// requiring validation against the organization's encryption standard.
 AzureActivity
 | where ActivityStatusValue == "Success"
-| where OperationNameValue has "Microsoft.Storage/storageAccounts"
+| where OperationNameValue has_any (
+    "Microsoft.Storage/storageAccounts",
+    "SetBlobServiceProperties",
+    "SetFileServiceProperties",
+    "SetPublicNetworkAccess"
+)
 | project
     TimeGenerated,
-    Cloud = "Azure",
     Caller,
     OperationNameValue,
     ResourceGroup,
