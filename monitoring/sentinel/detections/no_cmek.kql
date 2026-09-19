@@ -1,17 +1,27 @@
-// Flags resource creations without a Customer-Managed Key (CMEK).
+// REFERENCE DETECTION — NOT A PRODUCTION ANALYTIC RULE
+//
+// Purpose:
+// Illustrates how a centralized SIEM could identify storage resources
+// that may not meet an enterprise customer-managed-key requirement.
+//
+// Architecture dependency:
+// AWS and OCI telemetry must first be ingested and normalized into
+// Microsoft Sentinel. That ingestion pipeline is outside the implemented
+// scope of this repository.
+//
+// This query is intentionally illustrative because encryption properties,
+// schemas, and event structures vary by cloud and ingestion method.
+
+// Azure example: identify successful storage configuration activity
+// requiring validation against the organization's encryption standard.
 AzureActivity
-| where OperationNameValue has_any ("Microsoft.Storage/storageAccounts/write", "Microsoft.DBfor")
 | where ActivityStatusValue == "Success"
-| where Properties !has "encryption" or Properties !has "keyVaultProperties"
-| project TimeGenerated, Caller, OperationNameValue, ResourceGroup, Resource, SubscriptionId
-| union isfuzzy=true (
-AWSCloudTrail
-| where EventName == "CreateBucket"
-| project TimeGenerated, UserIdentityArn, EventName, requestParameters, awsRegion, RecipientAccountId
-)
-| union isfuzzy=true (
-GenericJson_CL
-| where tostring(Service) == "objectstorage" and tostring(EventName) == "CreateBucket"
-| where tostring(RequestParameters) !has "kmsKeyId"
-| project TimeGenerated, User, EventName, CompartmentId, BucketName
-)
+| where OperationNameValue has "Microsoft.Storage/storageAccounts"
+| project
+    TimeGenerated,
+    Cloud = "Azure",
+    Caller,
+    OperationNameValue,
+    ResourceGroup,
+    Resource,
+    SubscriptionId
