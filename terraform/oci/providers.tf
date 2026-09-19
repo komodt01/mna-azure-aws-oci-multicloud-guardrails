@@ -4,6 +4,7 @@ terraform {
       source  = "oracle/oci"
       version = ">= 5.40.0"
     }
+
     time = {
       source  = "hashicorp/time"
       version = ">= 0.9.0"
@@ -13,7 +14,7 @@ terraform {
 
 provider "oci" {
   region              = var.region
-  config_file_profile = "DEFAULT" # or "mna" if that's your working profile
+  config_file_profile = "DEFAULT"
 }
 
 provider "time" {}
