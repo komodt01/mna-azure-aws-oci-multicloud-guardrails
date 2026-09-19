@@ -1,15 +1,22 @@
-// REFERENCE DETECTION — NOT A PRODUCTION ANALYTIC RULE
+// IMPLEMENTED SENTINEL DETECTION
+//
+// Source:
+// terraform/azure/sentinel.tf
 //
 // Purpose:
-// Illustrates how Microsoft Sentinel could identify Azure storage
-// configuration activity associated with potential public exposure.
+// Identifies successful Azure Storage configuration changes that may
+// affect public exposure.
 //
-// Architecture dependency:
-// AWS and OCI telemetry would require separate ingestion and normalization
-// before equivalent multi-cloud detection logic could be implemented.
+// The event itself does not prove that a storage resource is publicly
+// accessible. It creates an investigation signal for security review.
 //
-// This query identifies configuration activity for investigation.
-// It does not independently prove that a resource is publicly accessible.
+// Investigation flow:
+// Configuration event -> Potential condition -> Investigation
+// -> Validated exposure -> Remediation or approved exception
+//
+// Scope:
+// Azure telemetry only. AWS and OCI telemetry ingestion into Microsoft
+// Sentinel is not implemented in this repository.
 
 AzureActivity
 | where ActivityStatusValue == "Success"
@@ -21,10 +28,8 @@ AzureActivity
 )
 | project
     TimeGenerated,
-    Cloud = "Azure",
     Caller,
     OperationNameValue,
     ResourceGroup,
     Resource,
     SubscriptionId
-| order by TimeGenerated desc
