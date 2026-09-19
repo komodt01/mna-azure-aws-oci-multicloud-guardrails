@@ -1,12 +1,23 @@
-# Enable Sentinel on the existing Log Analytics workspace
+# ----------------------------------------
+# Microsoft Sentinel
+# ----------------------------------------
+
+# Enable Microsoft Sentinel on the existing Log Analytics workspace.
 resource "azurerm_sentinel_log_analytics_workspace_onboarding" "sentinel" {
   workspace_id = azurerm_log_analytics_workspace.law.id
 }
 
-# Rule 1: Public storage changes (AzureActivity)
+# ----------------------------------------
+# Detection 1: Storage configuration activity
+# ----------------------------------------
+#
+# Identifies successful Azure Storage configuration changes that may
+# affect public exposure. The event itself does not prove that a
+# storage resource is publicly accessible; it creates an investigation
+# signal for security review.
 resource "azurerm_sentinel_alert_rule_scheduled" "public_storage" {
-  name                       = "${var.prefix}-public-storage"
-  display_name               = "Public storage change (AzureActivity)"
+  name                       = "${var.prefix}-storage-config-change"
+  display_name               = "Storage configuration change requiring review"
   log_analytics_workspace_id = azurerm_log_analytics_workspace.law.id
   severity                   = "Medium"
   enabled                    = true
@@ -17,18 +28,40 @@ resource "azurerm_sentinel_alert_rule_scheduled" "public_storage" {
 
   query = <<KQL
 AzureActivity
-| where OperationNameValue has_any ("SetBlobServiceProperties", "SetFileServiceProperties", "SetPublicNetworkAccess")
 | where ActivityStatusValue == "Success"
-| project TimeGenerated, Caller, OperationNameValue, ResourceGroup, Resource, SubscriptionId
+| where OperationNameValue has_any (
+    "Microsoft.Storage/storageAccounts",
+    "SetBlobServiceProperties",
+    "SetFileServiceProperties",
+    "SetPublicNetworkAccess"
+)
+| project
+    TimeGenerated,
+    Caller,
+    OperationNameValue,
+    ResourceGroup,
+    Resource,
+    SubscriptionId
 KQL
 
-  depends_on = [azurerm_sentinel_log_analytics_workspace_onboarding.sentinel]
+  depends_on = [
+    azurerm_sentinel_log_analytics_workspace_onboarding.sentinel
+  ]
 }
 
-# Rule 2: Resource created without CMK hints (AzureActivity heuristic)
+# ----------------------------------------
+# Detection 2: Encryption-related storage activity
+# ----------------------------------------
+#
+# Identifies successful Azure Storage account configuration activity
+# that requires validation against the organization's encryption and
+# key-management requirements.
+#
+# AzureActivity is used as an investigation signal. The event itself
+# does not prove that the storage account lacks a customer-managed key.
 resource "azurerm_sentinel_alert_rule_scheduled" "no_cmek" {
-  name                       = "${var.prefix}-no-cmek"
-  display_name               = "Resource created without CMK hint (AzureActivity)"
+  name                       = "${var.prefix}-encryption-review"
+  display_name               = "Storage configuration requiring encryption review"
   log_analytics_workspace_id = azurerm_log_analytics_workspace.law.id
   severity                   = "Medium"
   enabled                    = true
@@ -39,11 +72,18 @@ resource "azurerm_sentinel_alert_rule_scheduled" "no_cmek" {
 
   query = <<KQL
 AzureActivity
-| where OperationNameValue has_any ("Microsoft.Storage/storageAccounts/write", "Microsoft.DBfor")
 | where ActivityStatusValue == "Success"
-| where Properties !has "encryption" or Properties !has "keyVaultProperties"
-| project TimeGenerated, Caller, OperationNameValue, ResourceGroup, Resource, SubscriptionId
+| where OperationNameValue == "Microsoft.Storage/storageAccounts/write"
+| project
+    TimeGenerated,
+    Caller,
+    OperationNameValue,
+    ResourceGroup,
+    Resource,
+    SubscriptionId
 KQL
 
-  depends_on = [azurerm_sentinel_log_analytics_workspace_onboarding.sentinel]
+  depends_on = [
+    azurerm_sentinel_log_analytics_workspace_onboarding.sentinel
+  ]
 }
