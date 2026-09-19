@@ -1,96 +1,344 @@
 # Business Use Cases
 
-*All numeric values (e.g., timeframes or costs) annotated like `30*` are fictional for this demo.*
+## Purpose
 
-Each scenario includes **Business Goal**, **When to Use**, **Architecture Response**, **Controls & Evidence**, **KPIs**, **Stakeholders**, and **Trade-offs**.
+This document describes business scenarios where the security architecture patterns demonstrated in this repository could be applied.
 
----
+The implemented project contains selected Terraform-based controls across Microsoft Azure, AWS, and Oracle Cloud Infrastructure (OCI), along with monitoring examples.
 
-## 1) M&A Cloud Onboarding (AWS/OCI → Azure-Anchored)
-**Business Goal:** Integrate an acquired company’s cloud resources under corporate guardrails fast, without breaking operations.  
-**When to Use:** Day-1/Day-30 integration plans; fragmented accounts/tenancies; inconsistent logging/encryption.  
-**Architecture Response:**  
-- Deploy this repo’s **Azure landing zone** and **AWS/OCI baselines**.  
-- Centralize activity logs; enforce **CMEK-by-default**; tag and segment environments.  
-**Controls & Evidence:** NIST CSF (PR.AC, PR.DS, DE.AE), ISO 27001 (A.5, A.8, A.12), CSA CCM (IAM-12, EKM-02, LOG-01).  
-- Evidence: Terraform state, policies, diagnostic settings, CloudTrail config, OCI Vault/KMS config.  
-**KPIs:** `T_{day1}*` to baseline logs, `% accounts with CMEK`, `% resources with diagnostics`.  
-**Stakeholders:** Corp SecArch, Cloud Platform, M&A Integrations, BU App Owners.  
-**Trade-offs:** Speed vs. depth of controls; temporary exceptions tracked in ADRs.
+Some scenarios below describe **potential extensions** beyond the implemented demonstration. Those extensions are identified as future-state architecture rather than existing project capabilities.
 
 ---
 
-## 2) Regulatory Uplift for Insurance/Financial Services
-**Business Goal:** Meet PCI/ISO audits and client due-diligence with consistent, testable guardrails.  
-**When to Use:** Upcoming audit, customer security questionnaire, or new regulated workload.  
-**Architecture Response:**  
-- Enforce **diagnostic settings** → Log Analytics; **multi-region CloudTrail**; **OCI Vault/KMS**.  
-- Add Azure Policy/AWS Config/OCI Cloud Guard (extend from this baseline).  
-**Controls & Evidence:** PCI DSS 10 (logging), 3 (encryption), ISO 27001 A.8/A.12, CSA CCM LOG-01/EKM-02.  
-**KPIs:** `% resources auto-remediated`, `Mean time to evidence (MTEE*)`, `Policy compliance %`.  
-**Stakeholders:** Compliance, Risk, Internal Audit, SecOps.  
-**Trade-offs:** Stricter policies can slow experiments; document exceptions + compensating controls.
+## 1. M&A Cloud Onboarding
+
+### Business Goal
+
+Bring cloud environments inherited through an acquisition under an initial enterprise security model without unnecessarily disrupting existing business operations.
+
+### Scenario
+
+The acquiring organization primarily operates Azure while the acquired organization has workloads in AWS and OCI.
+
+The inherited environments may have different approaches to:
+
+* Logging
+* Encryption
+* Key management
+* Resource organization
+* Monitoring
+* Security configuration
+* Operational ownership
+
+Immediate migration is not necessarily the appropriate first action.
+
+### Architecture Response
+
+The initial security approach would focus on:
+
+**Discover → Assess → Establish Visibility → Protect Critical Assets → Apply Minimum Guardrails → Identify Exceptions → Determine Target State**
+
+The repository demonstrates selected controls supporting this approach, including:
+
+* Azure Log Analytics
+* Azure Key Vault diagnostic logging
+* AWS CloudTrail
+* AWS KMS
+* AWS S3 audit-log storage
+* OCI Vault
+* OCI Object Storage encryption
+* Terraform-based deployment
+* Example centralized detection concepts
+
+### Architecture Considerations
+
+Additional enterprise capabilities could include:
+
+* Identity federation
+* Privileged-access governance
+* Network segmentation
+* Cloud configuration policies
+* Exception management
+* Centralized security operations
+* Workload disposition planning
+
+These represent target-state considerations rather than controls fully implemented by this repository.
+
+### Key Tradeoff
+
+**Security standardization vs. business continuity**
+
+The acquiring organization needs to reduce material security exposure while avoiding controls that unexpectedly interrupt inherited business services.
 
 ---
 
-## 3) Data Protection Modernization (PII/PCI)
-**Business Goal:** Reduce breach impact and audit findings by ensuring encryption and preventing public data exposure.  
-**When to Use:** Handling PII/PCI; migrating sensitive data to cloud; prior findings on encryption/public buckets.  
-**Architecture Response:**  
-- **CMEK everywhere** (Azure Key Vault, AWS KMS, OCI Vault).  
-- Detections for **public storage** & **no-CMEK** (see `monitoring/sentinel/detections`).  
-**Controls & Evidence:** NIST PR.DS, ISO 27001 A.8/A.10, CSA CCM EKM-02.  
-**KPIs:** `% storage with CMEK`, `# public exposure detections (↓)`, `Time to remediate*`.  
-**Stakeholders:** Data Owners, App Teams, SecOps.  
-**Trade-offs:** Key management overhead; rotation windows; cross-cloud key governance.
+## 2. Security Baseline Standardization
+
+### Business Goal
+
+Establish repeatable minimum security expectations across cloud environments operated by different teams.
+
+### Architecture Response
+
+The project demonstrates how selected baseline controls can be represented using Terraform.
+
+Examples include:
+
+* Audit logging
+* Encryption and key management
+* Centralized Azure logging
+* Protected audit-log storage
+* Storage lifecycle configuration
+
+A broader production architecture could extend this approach through cloud-native governance services such as:
+
+* Azure Policy
+* AWS Config
+* AWS Organizations guardrails
+* OCI Cloud Guard
+* Policy-as-Code
+* CI/CD validation
+
+### Key Tradeoff
+
+**Consistency vs. cloud-native flexibility**
+
+Enterprise requirements should be consistent where appropriate, but the implementation does not need to be identical in every cloud.
 
 ---
 
-## 4) Post-Incident Hardening / Gap Closure
-**Business Goal:** After an incident or red-team exercise, close monitoring & control gaps quickly.  
-**When to Use:** Findings cite missing logs, no detections, or poor evidence quality.  
-**Architecture Response:**  
-- Centralize logs; deploy KQL detections; add playbooks for auto-response (SOAR).  
-- Expand Terraform to cover more services with diagnostics by default.  
-**Controls & Evidence:** NIST DE.AE/RS.AN, ISO 27001 A.12, CSA CCM LOG-01/IVS-06.  
-**KPIs:** `MTTD/MTTR*`, `Alert fidelity`, `% services with diagnostics`.  
-**Stakeholders:** IR team, CISO, Platform, App Owners.  
-**Trade-offs:** Increased log costs; tune retention to `30*`/`90*` days per risk.
+## 3. Data-Protection Improvement
+
+### Business Goal
+
+Strengthen protection of sensitive information across cloud environments.
+
+### Architecture Response
+
+The implemented project demonstrates selected encryption and key-management capabilities using:
+
+* Azure Key Vault
+* AWS KMS
+* OCI Vault
+
+The OCI example also demonstrates Object Storage encryption using a customer-managed key.
+
+The architecture can be expanded according to workload requirements to address:
+
+* Data classification
+* Key ownership
+* Rotation
+* Access to keys
+* Public exposure
+* Data masking
+* Tokenization
+* Retention
+* Backup
+* Monitoring
+
+### Monitoring
+
+The repository includes example detection concepts related to public storage and expected encryption controls.
+
+These examples illustrate how configuration conditions could become security findings requiring investigation.
+
+### Key Tradeoff
+
+**Stronger key control vs. operational complexity**
+
+Customer-managed encryption keys can provide additional control but also introduce responsibilities involving permissions, lifecycle management, availability, rotation, recovery, and operational support.
 
 ---
 
-## 5) Regional Expansion & Data Residency
-**Business Goal:** Enter new markets while respecting data-residency and sovereignty rules.  
-**When to Use:** Opening EU/APAC regions; subject to GDPR/industry mandates.  
-**Architecture Response:**  
-- Spin up regionalized **guardrails** and **CMEK in-region**; ensure log storage stays in-region.  
-- Use tagging to drive residency policies and routing.  
-**Controls & Evidence:** GDPR Art. 5/32 (principles, security), ISO 27001 A.8, CSA CCM DSI-01.  
-**KPIs:** `% data stores with in-region CMEK`, `% logs stored in-region`, `Residency policy violations`.  
-**Stakeholders:** Legal/Privacy, Compliance, Platform, BU Leads.  
-**Trade-offs:** Duplication of services; higher OPEX; cross-region latency.
+## 4. Logging and Security Visibility
+
+### Business Goal
+
+Improve visibility into cloud administrative and security activity.
+
+### Implemented Examples
+
+The repository demonstrates:
+
+**Azure**
+
+Azure resource activity → Diagnostic Settings → Log Analytics
+
+**AWS**
+
+AWS API activity → CloudTrail → protected S3 storage
+
+**OCI**
+
+OCI provides native audit capabilities, while additional centralized ingestion would require further integration beyond the demonstrated baseline.
+
+### Future-State Architecture
+
+A broader enterprise monitoring architecture could follow:
+
+**Cloud Telemetry → Cloud-Native Collection → Enterprise Monitoring → Detection → Investigation → Response**
+
+Not every available event necessarily needs to be centralized.
+
+Telemetry decisions should consider:
+
+* Security value
+* Investigation requirements
+* Compliance requirements
+* Retention
+* Volume
+* Cost
+* Operational ownership
+
+### Key Tradeoff
+
+**Visibility vs. ingestion and operational cost**
+
+Collecting more telemetry does not automatically create better detection.
 
 ---
 
-## 6) Third-Party/Vendor Integration
-**Business Goal:** Onboard vendor workloads safely with least privilege and full observability.  
-**When to Use:** New SaaS/PaaS partner integration, data exchange, or private connectivity.  
-**Architecture Response:**  
-- Standardize **least-privilege roles**, **private connectivity**, and **central logging**.  
-- Stipulate CMEK and logging in vendor contracts; validate via evidence artifacts.  
-**Controls & Evidence:** NIST PR.AC/PR.DS, ISO 27001 A.5/A.9, CSA CCM IAM-12/SEF-02.  
-**KPIs:** `Time-to-onboard*`, `# of exceptions`, `Evidence completeness score*`.  
-**Stakeholders:** Vendor Mgmt, Security, Networking, App Owners.  
-**Trade-offs:** Contract friction; additional onboarding steps.
+## 5. Post-Incident Security Improvement
+
+### Business Goal
+
+Use lessons from an incident, audit finding, or security assessment to strengthen cloud controls.
+
+### Architecture Response
+
+If an investigation identifies weaknesses such as missing audit logs, insufficient encryption, or inadequate monitoring, the architecture could use Infrastructure as Code to make selected improvements repeatable.
+
+The controls demonstrated in this repository could support remediation involving:
+
+* Cloud audit logging
+* Protected log storage
+* Key management
+* Selected encryption controls
+* Centralized Azure logging
+
+### Future-State Extensions
+
+Depending on the finding, additional architecture could include:
+
+* Expanded detection rules
+* Security configuration policies
+* Automated evidence collection
+* Incident-response workflows
+* Controlled remediation automation
+
+### Key Tradeoff
+
+**Response speed vs. remediation risk**
+
+Urgency after an incident should not lead to poorly understood automated changes that create additional outages or business impact.
 
 ---
 
-## 7) Platform Engineering Guardrails (Golden Path)
-**Business Goal:** Provide product teams a paved-road baseline that bakes in security & compliance.  
-**When to Use:** Multiple teams deploying independently; need consistent controls and faster reviews.  
-**Architecture Response:**  
-- Publish this baseline as a **starter platform**; integrate with CI checks (OPA/Conftest) pre-merge.  
-**Controls & Evidence:** CSA CCM SEF-02/IVS-12, ISO 27001 A.12.  
-**KPIs:** `Lead time to deploy*`, `Policy compliance %`, `# review findings per release (↓)`.  
-**Stakeholders:** Platform Eng, App Teams, Security Architecture.  
-**Trade-offs:** Governance vs. flexibility; allow opt-outs via ADRs and exception workflow.
+## 6. Cloud Governance Evolution
+
+### Business Goal
+
+Move from individually configured cloud environments toward repeatable enterprise security guardrails.
+
+### Architecture Progression
+
+A reasonable progression could be:
+
+**Documented Standard → Infrastructure as Code → Validation → Preventive Guardrail → Detection → Exception Management → Continuous Evidence**
+
+This repository demonstrates portions of the earlier stages through Terraform-based configuration and monitoring examples.
+
+Future capabilities could add:
+
+* Azure Policy
+* AWS Config
+* AWS organizational controls
+* OCI Cloud Guard
+* Policy-as-Code
+* Automated CI/CD validation
+* Exception workflows
+* Continuous control monitoring
+
+### Key Tradeoff
+
+**Enforcement vs. flexibility**
+
+Controls should be strong enough to reduce material risk without forcing teams to bypass the governance model when legitimate business exceptions occur.
+
+---
+
+## 7. Architecture Review and Exception Management
+
+### Business Goal
+
+Provide a consistent method for evaluating acquired or nonstandard cloud workloads.
+
+### Architecture Questions
+
+For each workload, the architecture review should determine:
+
+* What business service does it support?
+* Who owns it?
+* What data does it process?
+* What identities can access it?
+* What administrative access exists?
+* Is required security activity logged?
+* How is sensitive data protected?
+* What network exposure exists?
+* Which enterprise requirements does it meet?
+* Which requirements does it not meet?
+* What compensating controls exist?
+* What is the business impact of remediation?
+* What is the long-term disposition of the workload?
+
+### Exception Model
+
+Where immediate compliance with an enterprise requirement is not practical, an exception should document:
+
+* Requirement
+* Gap
+* Business justification
+* Risk
+* Compensating controls
+* Owner
+* Approval
+* Remediation plan
+* Review or expiration date
+
+This allows M&A integration to proceed without treating either immediate enforcement or indefinite noncompliance as the only choices.
+
+---
+
+# Business and Architecture Value
+
+The value of this project is not that it creates a complete multi-cloud security platform.
+
+It demonstrates how an organization can begin establishing security governance across cloud environments that were designed independently.
+
+The architecture separates:
+
+**What must be protected**
+
+from:
+
+**How each cloud implements the protection**
+
+and separates:
+
+**Initial M&A security stabilization**
+
+from:
+
+**Long-term target-state architecture**
+
+That distinction allows security teams to reduce immediate risk while business and technology teams make deliberate decisions about migration, modernization, consolidation, or retirement.
+
+## Key Takeaway
+
+M&A cloud integration should not begin with:
+
+**“How quickly can we make the acquired environment look like ours?”**
+
+It should begin with:
+
+**“What do we need to understand, protect, and monitor now, and what can safely evolve over time?”**
