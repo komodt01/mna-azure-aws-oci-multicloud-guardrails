@@ -1,9 +1,15 @@
-# Read the Object Storage namespace (needs TENANCY OCID)
+# ----------------------------------------
+# Object Storage Namespace
+# ----------------------------------------
+
 data "oci_objectstorage_namespace" "ns" {
   compartment_id = var.tenancy_ocid
 }
 
-# ------- KMS: Vault + Key (CMEK) -------
+# ----------------------------------------
+# OCI Vault and Customer-Managed Key
+# ----------------------------------------
+
 resource "oci_kms_vault" "vault" {
   compartment_id = var.compartment_ocid
   display_name   = "${var.prefix}-vault"
@@ -11,7 +17,7 @@ resource "oci_kms_vault" "vault" {
 }
 
 resource "oci_kms_key" "cmek" {
-  compartment_id      = var.compartment_ocid # <-- add this
+  compartment_id      = var.compartment_ocid
   management_endpoint = oci_kms_vault.vault.management_endpoint
   display_name        = "${var.prefix}-cmek"
   protection_mode     = "SOFTWARE"
@@ -22,7 +28,10 @@ resource "oci_kms_key" "cmek" {
   }
 }
 
-# ------- Object Storage bucket (encrypted with our KMS key) -------
+# ----------------------------------------
+# Object Storage Bucket
+# ----------------------------------------
+
 resource "oci_objectstorage_bucket" "logs" {
   compartment_id = var.compartment_ocid
   namespace      = data.oci_objectstorage_namespace.ns.namespace
@@ -31,10 +40,13 @@ resource "oci_objectstorage_bucket" "logs" {
   versioning     = "Enabled"
   kms_key_id     = oci_kms_key.cmek.id
 
-  depends_on = [time_sleep.wait_policy] # <-- add this line
+  depends_on = [time_sleep.wait_policy]
 }
 
-# ------- Lifecycle: delete objects after retention_days (demo) -------
+# ----------------------------------------
+# Object Lifecycle Policy
+# ----------------------------------------
+
 resource "oci_objectstorage_object_lifecycle_policy" "logs_policy" {
   namespace = data.oci_objectstorage_namespace.ns.namespace
   bucket    = oci_objectstorage_bucket.logs.name
@@ -48,6 +60,5 @@ resource "oci_objectstorage_object_lifecycle_policy" "logs_policy" {
     target      = "objects"
   }
 
-  depends_on = [time_sleep.wait_policy] # ← ensure this is here
+  depends_on = [time_sleep.wait_policy]
 }
-
