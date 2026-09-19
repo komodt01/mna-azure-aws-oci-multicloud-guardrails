@@ -2,9 +2,9 @@
 
 ## Project Overview
 
-This project demonstrates a security architecture approach for onboarding an acquired company's cloud environments into an existing enterprise security model.
+This project demonstrates a security architecture approach for onboarding acquired cloud environments into an existing enterprise security model.
 
-The scenario assumes the acquiring organization uses Microsoft Azure as its primary enterprise security and monitoring environment while the acquired organization operates workloads in AWS and Oracle Cloud Infrastructure (OCI).
+The scenario assumes the acquiring organization is primarily Azure-centered while the acquired organization introduces workloads and resources in AWS and Oracle Cloud Infrastructure (OCI).
 
 The architecture problem is not simply:
 
@@ -12,9 +12,9 @@ The architecture problem is not simply:
 
 It is:
 
-**How can an organization establish minimum security expectations across newly acquired cloud environments while allowing AWS, Azure, and OCI to retain their native architectures and services?**
+**How can an organization establish minimum security expectations across newly acquired cloud environments while allowing Azure, AWS, and OCI to retain their native architectures and services?**
 
-The project combines architecture analysis with Terraform examples that demonstrate selected baseline controls across the three cloud platforms.
+The project combines architecture analysis with Terraform implementations of selected security guardrails across the three cloud platforms.
 
 It is a portfolio architecture project and should not be interpreted as a complete production landing zone, compliance implementation, or enterprise M&A integration platform.
 
@@ -39,9 +39,9 @@ Those environments may differ in:
 * Retention
 * Governance
 
-Immediately migrating every acquired workload into the acquiring company's primary cloud may introduce unnecessary operational and business risk.
+Immediately migrating every acquired workload into the acquiring organization's primary cloud may introduce unnecessary operational and business risk.
 
-The security architecture therefore needs an interim integration model that can establish visibility and minimum security expectations while longer-term application and cloud decisions are made.
+The security architecture therefore needs an interim integration model that establishes visibility, protects critical assets, introduces minimum guardrails, and governs exceptions while longer-term workload and cloud decisions are made.
 
 ---
 
@@ -49,48 +49,59 @@ The security architecture therefore needs an interim integration model that can 
 
 The objective is to establish an initial multi-cloud security baseline around:
 
-* Centralized security visibility
+* Security visibility
 * Audit logging
 * Encryption and key management
 * Storage protection
-* Configuration consistency
+* Configuration guardrails
 * Detection of selected security conditions
 * Infrastructure as Code
 * Repeatable cloud onboarding
 * Evidence generation
-* Controlled evolution toward stronger enterprise guardrails
+* Exception governance
+* Controlled evolution toward a longer-term target state
 
-The design uses Azure as the conceptual enterprise monitoring anchor while AWS and OCI retain cloud-native security controls.
+Azure serves as the enterprise monitoring anchor in the scenario while AWS and OCI retain cloud-native security controls.
 
-This creates a model of:
+The core architectural principle is:
 
-**Enterprise Security Requirements → Cloud-Specific Guardrails → Cloud-Native Telemetry → Central Security Visibility → Investigation / Remediation**
+**Standardize the security requirement, not necessarily the cloud implementation.**
+
+The overall decision flow is:
+
+**Discover → Assess → Establish Visibility → Protect Critical Assets → Apply Minimum Guardrails → Identify Exceptions → Determine Target State**
 
 ---
 
-## Architecture Principles
+# Architecture Principles
 
-### 1. Establish Visibility Early
+## 1. Establish Visibility Early
 
 Before attempting broad cloud transformation, the acquiring organization needs visibility into administrative activity and important security events.
 
-Logging therefore becomes an early integration requirement.
+Logging and monitoring therefore become early integration requirements.
 
-### 2. Protect Sensitive Resources
+## 2. Protect Critical Assets
 
 Encryption and key-management controls provide an initial data-protection baseline while the organization evaluates inherited workloads and data.
 
-### 3. Use Cloud-Native Controls
+## 3. Use Cloud-Native Controls
 
-AWS, Azure, and OCI do not need identical implementations.
+Azure, AWS, and OCI do not need identical technical implementations.
 
-The architecture establishes required security outcomes and uses the appropriate native capabilities in each cloud.
+The architecture establishes required security outcomes and uses appropriate native capabilities within each cloud.
 
-### 4. Automate Repeatable Baselines
+## 4. Apply Guardrails According to Risk
+
+Not every security condition should initially be handled the same way.
+
+Some conditions justify preventive enforcement, while others may require detection, investigation, remediation, or a temporary exception.
+
+## 5. Automate Repeatable Baselines
 
 Terraform demonstrates how selected baseline controls can be deployed consistently and reviewed as code.
 
-### 5. Separate Initial Guardrails from Target-State Architecture
+## 6. Separate Initial Guardrails from Target-State Architecture
 
 An M&A security baseline is not necessarily the final enterprise architecture.
 
@@ -109,58 +120,136 @@ Initial controls reduce exposure and improve visibility while architecture teams
 
 ## Microsoft Azure
 
-The Terraform example creates selected Azure components including:
+The Terraform implementation creates selected Azure security and monitoring components including:
 
 * Resource Group
 * Log Analytics Workspace
 * Key Vault
-* Diagnostic settings directing supported telemetry to centralized logging
+* Key Vault diagnostic settings directing supported telemetry to Log Analytics
+* Azure Policy guardrails
+* Microsoft Sentinel onboarding
+* Two scheduled Microsoft Sentinel analytic rules
 
-Azure represents the monitoring anchor for the scenario.
+### Azure Policy Guardrails
+
+The Azure Policy implementation demonstrates two different control strategies.
+
+**Preventive control**
+
+Azure Storage Accounts configured with public blob access are denied.
+
+This represents a condition where the architecture establishes a minimum security requirement through preventive enforcement.
+
+**Detective control**
+
+Key Vaults without purge protection enabled are audited.
+
+This represents a condition where the architecture identifies a configuration gap for review rather than automatically preventing deployment.
+
+Both policies are grouped into an M&A security guardrail initiative and assigned at Resource Group scope.
+
+### Microsoft Sentinel
+
+Microsoft Sentinel is enabled on the Log Analytics Workspace through Terraform.
+
+Two Azure-focused scheduled analytic rules are implemented:
+
+* Storage configuration change requiring review
+* Storage configuration requiring encryption review
+
+The rules intentionally treat Azure configuration events as investigation signals rather than definitive evidence of an insecure resource state.
+
+AzureActivity can identify relevant configuration activity, but additional validation is required before determining whether a resource is actually exposed or violates the organization's encryption requirements.
+
+The investigation pattern is:
+
+**Configuration Event → Potential Condition → Investigation → Validated Risk → Remediation or Approved Exception**
 
 ---
 
 ## AWS
 
-The AWS example demonstrates:
+The AWS Terraform implementation demonstrates:
 
 * AWS KMS key
-* S3 storage for CloudTrail logs
+* Automatic KMS key rotation
+* KMS alias
+* S3 bucket for CloudTrail logs
+* S3 public-access blocking
+* S3 versioning
+* SSE-KMS encryption
+* CloudTrail bucket policy
+* Object lifecycle retention
 * Multi-Region CloudTrail
-* Log file validation
+* Global service event logging
+* CloudTrail log-file validation
 
-These controls provide an initial audit and data-protection baseline for the acquired AWS environment.
+These controls provide an initial audit, storage-protection, and data-protection baseline for the acquired AWS environment.
 
 ---
 
 ## Oracle Cloud Infrastructure
 
-The OCI example demonstrates:
+The OCI Terraform implementation demonstrates:
 
 * OCI Vault
-* Customer-managed encryption key
-* Object Storage
-* Storage encryption using the Vault key
-* Lifecycle configuration for demonstration retention
+* AES-256 customer-managed encryption key
+* Software-based key protection
+* Object Storage bucket
+* Object Storage encryption using the customer-managed key
+* Object versioning
+* Lifecycle-based object retention
+* IAM policy allowing Object Storage to use KMS keys
+* IAM policy supporting Object Storage lifecycle operations
+* IAM policy propagation handling before dependent storage configuration
 
-These controls provide selected encryption and storage-governance examples for the acquired OCI environment.
+These controls provide selected encryption and storage-governance capabilities for the acquired OCI environment.
+
+The implemented OCI key uses software protection. The project does not claim that the key is HSM-protected.
 
 ---
 
-# Monitoring
+# Monitoring and Detection
 
-The repository includes example Microsoft Sentinel detection queries intended to demonstrate how selected conditions could be investigated through centralized monitoring.
+Microsoft Sentinel provides the implemented monitoring capability for the Azure portion of the project.
 
-Examples include:
+The repository also maintains readable KQL versions of the implemented Sentinel detections under:
 
-* Public storage exposure patterns
-* Resources that may not meet expected customer-managed-key requirements
+`monitoring/sentinel/detections/`
 
-These examples demonstrate detection concepts rather than a complete production detection library.
+The two detections focus on:
 
-A broader enterprise architecture could extend this model to:
+* Azure Storage configuration activity that may affect public exposure
+* Azure Storage account configuration activity requiring encryption review
+
+Neither detection independently proves that the resulting resource configuration is insecure.
+
+The architecture deliberately separates:
+
+**Signal → Investigation → Validation → Decision**
+
+This avoids treating telemetry as stronger evidence than it actually provides.
+
+---
+
+## Current Monitoring Boundary
+
+The implemented Sentinel configuration processes Azure telemetry only.
+
+The repository does **not** implement:
+
+* AWS telemetry ingestion into Microsoft Sentinel
+* OCI telemetry ingestion into Microsoft Sentinel
+* Cross-cloud telemetry normalization
+* Cross-cloud Sentinel analytic rules
+
+A true centralized multi-cloud monitoring architecture would require additional ingestion pipelines, schema mapping, normalization, and detection engineering.
+
+The longer-term architecture could evolve toward:
 
 **Cloud Telemetry → Central Monitoring → Detection → Investigation → Response → Evidence**
+
+That represents a target-state direction rather than the current implementation.
 
 ---
 
@@ -170,11 +259,11 @@ An acquisition creates competing priorities.
 
 The organization needs to reduce security exposure without disrupting business services or forcing premature migration decisions.
 
-I would approach acquired cloud environments using the following sequence:
+The security architecture follows this sequence:
 
 **Discover → Assess → Establish Visibility → Protect Critical Assets → Apply Minimum Guardrails → Identify Exceptions → Determine Target State**
 
-### Discover
+## Discover
 
 Identify:
 
@@ -188,7 +277,7 @@ Identify:
 * Logging
 * Business owners
 
-### Assess
+## Assess
 
 Determine:
 
@@ -200,13 +289,15 @@ Determine:
 * Technical dependencies
 * Operational constraints
 
-### Establish Visibility
+## Establish Visibility
 
-Prioritize security telemetry required to understand administrative and security activity.
+Identify and enable the security telemetry needed to understand administrative activity, configuration changes, and relevant security events.
 
-### Protect Critical Assets
+Visibility should precede broad transformation because architecture decisions require an understanding of the inherited environment.
 
-Address high-risk conditions involving areas such as:
+## Protect Critical Assets
+
+Prioritize high-risk conditions involving areas such as:
 
 * Sensitive data
 * Administrative access
@@ -214,11 +305,20 @@ Address high-risk conditions involving areas such as:
 * Public exposure
 * Audit logging
 
-### Apply Minimum Guardrails
+## Apply Minimum Guardrails
 
-Establish controls that can reasonably be applied without disrupting acquired business operations.
+Establish security requirements that can reasonably be applied without unnecessarily disrupting acquired business operations.
 
-### Identify Exceptions
+Controls may be:
+
+* Preventive
+* Detective
+* Corrective
+* Procedural
+
+The appropriate control depends on risk, confidence, business impact, and the maturity of the acquired environment.
+
+## Identify Exceptions
 
 Where inherited workloads cannot immediately meet enterprise standards, document:
 
@@ -231,9 +331,20 @@ Where inherited workloads cannot immediately meet enterprise standards, document
 * Remediation plan
 * Review date
 
-### Determine Target State
+An exception should represent a governed temporary decision rather than an undocumented deviation from the security standard.
 
-Each workload can then be evaluated for retention, modernization, migration, consolidation, or retirement.
+## Determine Target State
+
+Each workload can then be evaluated for:
+
+* Retention
+* Modernization
+* Migration
+* Consolidation
+* Replatforming
+* Retirement
+
+Security integration therefore supports the business decision rather than forcing the cloud decision prematurely.
 
 ---
 
@@ -245,21 +356,48 @@ Immediately enforcing every enterprise standard may disrupt acquired application
 
 The initial architecture should prioritize material risks while providing a controlled path toward stronger standardization.
 
+---
+
 ## Centralization vs. Cloud-Native Capability
 
-Centralized monitoring provides enterprise visibility, but each cloud contains useful native security capabilities.
+Centralized monitoring can provide enterprise visibility, but each cloud contains useful native security capabilities.
 
-The architecture can use both rather than forcing all security functions into a single platform.
+The architecture can establish common security requirements while allowing each cloud to use the native services best suited to satisfying those requirements.
+
+---
 
 ## Preventive Controls vs. Detection
 
-Preventive guardrails provide stronger enforcement but can interfere with inherited workloads whose dependencies are not yet fully understood.
+Preventive controls provide stronger enforcement but can interfere with inherited workloads whose dependencies are not yet fully understood.
 
 Early M&A integration may therefore require a combination of:
 
 * Preventive controls for clearly unacceptable conditions
 * Detective controls for conditions requiring investigation
 * Manual remediation where business impact must first be understood
+* Temporary exceptions where immediate remediation is not feasible
+
+The implemented Azure Policy examples demonstrate this distinction directly:
+
+**Public blob access → Preventive / Deny**
+
+**Missing Key Vault purge protection → Detective / Audit**
+
+---
+
+## Detection vs. Proof
+
+A security event does not necessarily prove that an insecure state exists.
+
+For example, storage configuration activity may justify investigation without proving that the storage resource became publicly accessible.
+
+The architecture therefore distinguishes between:
+
+**Event → Potential Condition → Validation → Confirmed Risk**
+
+This distinction reduces false assumptions and supports more defensible security decisions.
+
+---
 
 ## Automation vs. Operational Risk
 
@@ -269,15 +407,39 @@ Corrective automation should consider:
 
 **Confidence → Business Impact → Blast Radius → Reversibility → Approval**
 
+During an acquisition, automated remediation should be introduced carefully until application dependencies and operational ownership are sufficiently understood.
+
+---
+
+# Identity Architecture
+
+Enterprise identity federation is not implemented by the Terraform in this repository.
+
+The architecture proposes Microsoft Entra ID as a potential future enterprise identity provider for federated access across acquired cloud environments.
+
+That direction is documented as an architecture decision rather than a deployed capability.
+
+Future identity integration could include:
+
+* Federation into AWS
+* Federation into OCI
+* Centralized workforce identity
+* Strong authentication requirements
+* Privileged-access governance
+* Conditional access
+* Joiner/mover/leaver integration
+
+The target-state identity architecture should be introduced only after inherited identities, administrative paths, service accounts, and workload dependencies have been assessed.
+
 ---
 
 # Architecture Evolution
 
-The Terraform controls in this repository represent selected baseline examples rather than the complete target architecture.
+The Terraform controls in this repository represent selected baseline guardrails rather than a complete target architecture.
 
 Potential future-state capabilities include:
 
-* Azure Policy
+* Broader Azure Policy coverage
 * AWS Config and organizational guardrails
 * OCI Cloud Guard
 * Enterprise identity federation
@@ -287,11 +449,13 @@ Potential future-state capabilities include:
 * Policy-as-Code
 * CI/CD security validation
 * Expanded Sentinel detections
+* AWS and OCI telemetry ingestion into Sentinel
+* Cross-cloud telemetry normalization
 * SOAR workflows
 * Security exception management
 * Continuous compliance monitoring
 
-These should be introduced according to business risk and the target-state architecture rather than simply because the technology is available.
+These capabilities should be introduced according to business risk, operational readiness, and the target-state architecture rather than simply because the technology is available.
 
 ---
 
@@ -303,6 +467,8 @@ mna-azure-aws-oci-multicloud-guardrails/
 ├── technologies.md
 ├── teardown.md
 ├── business-use-cases.md
+├── governance/
+│   └── adrs/
 ├── terraform/
 │   ├── azure/
 │   ├── aws/
@@ -323,7 +489,9 @@ mna-azure-aws-oci-multicloud-guardrails/
 * Appropriate AWS authentication and permissions
 * Appropriate OCI authentication and compartment permissions
 
-Cloud resources may incur charges. The repository includes teardown guidance for removing demonstration resources after use.
+Cloud resources may incur charges.
+
+The repository includes teardown guidance for removing demonstration resources after use.
 
 ## Terraform Workflow
 
@@ -349,16 +517,26 @@ This project demonstrates:
 
 * M&A security architecture thinking
 * Multi-cloud security governance
-* AWS, Azure, and OCI security capabilities
-* Cloud-native logging
-* Encryption and key management
-* Infrastructure as Code
-* Security monitoring concepts
-* Security baseline design
 * Risk-based guardrail adoption
+* Preventive and detective control selection
+* AWS, Azure, and OCI security capabilities
+* Azure Policy
+* Microsoft Sentinel detection architecture
+* Cloud-native audit logging
+* Encryption and customer-managed key management
+* Storage protection
+* Infrastructure as Code
+* Security monitoring
+* Investigation-oriented detection design
+* Security exception governance
 * Architecture tradeoff analysis
-* Security exception considerations
 * Target-state architecture planning
+
+It also demonstrates an important architecture boundary:
+
+**Implemented controls and target-state recommendations are not the same thing.**
+
+The repository explicitly distinguishes between capabilities implemented through Terraform and capabilities proposed as future architecture.
 
 ---
 
@@ -366,12 +544,14 @@ This project demonstrates:
 
 An acquisition does not automatically require immediate cloud consolidation.
 
-Security architecture can first establish visibility, protect critical assets, and introduce minimum guardrails while the organization determines the appropriate long-term disposition of inherited workloads.
+Security architecture can first establish visibility, protect critical assets, introduce minimum guardrails, and govern exceptions while the organization determines the appropriate long-term disposition of inherited workloads.
 
 The architecture progression is:
 
-**Acquire → Discover → Assess → Establish Visibility → Protect → Govern → Decide Target State**
+**Discover → Assess → Establish Visibility → Protect Critical Assets → Apply Minimum Guardrails → Identify Exceptions → Determine Target State**
 
 The goal is not to make Azure, AWS, and OCI identical.
 
 The goal is to bring acquired environments under a **consistent enterprise security model without creating unnecessary business disruption.**
+
+**Standardize the security requirement, not necessarily the cloud implementation.**
