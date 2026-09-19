@@ -4,23 +4,23 @@ variable "prefix" {
 }
 
 variable "region" {
-  description = "OCI region (e.g., us-phoenix-1)"
+  description = "OCI region for deployed resources"
   type        = string
   default     = "us-phoenix-1"
 }
 
 variable "tenancy_ocid" {
-  description = "Tenancy OCID (needed to read Object Storage namespace)"
+  description = "OCI tenancy OCID used to retrieve the Object Storage namespace"
   type        = string
 }
 
 variable "compartment_ocid" {
-  description = "Target compartment OCID for vault, key, and bucket"
+  description = "Target compartment OCID for the Vault, key, and Object Storage resources"
   type        = string
 }
 
 variable "retention_days" {
-  description = "Delete objects after N days (demo value; 30*)"
+  description = "Number of days objects are retained before lifecycle deletion"
   type        = number
   default     = 30
 }
