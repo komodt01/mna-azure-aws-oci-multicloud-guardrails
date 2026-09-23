@@ -206,3 +206,139 @@ Azure telemetry → Sentinel → Implemented
 AWS telemetry → Sentinel → Not implemented
 
 OCI telemetry → Sentinel → Not implemented
+```
+
+The existence of a central SIEM does not automatically create centralized visibility.
+
+AWS and OCI would require telemetry collection, transport, normalization, mapping, and detection logic before the enterprise could claim meaningful centralized monitoring of those environments.
+
+Until then, the enterprise has different levels of visibility across the three clouds.
+
+That difference matters during incident investigation.
+
+An analyst should know whether an absence of Sentinel evidence means:
+
+**nothing happened**
+
+or:
+
+**that environment is not yet providing the required telemetry.**
+
+Those are very different conclusions.
+
+---
+
+## Cloud Ownership Does Not Create Cloud-to-Cloud Trust
+
+Azure, AWS, and OCI are part of the same enterprise scenario.
+
+That does not mean they should automatically trust each other.
+
+A future application dependency between clouds should establish only the connectivity and authorization required for that dependency.
+
+The architecture should avoid turning enterprise ownership into broad network or identity trust between cloud environments.
+
+For example, introducing private connectivity between clouds would not by itself justify unrestricted routing between workloads.
+
+Likewise, centralized workforce identity would not mean that every federated user should receive equivalent authority in every cloud.
+
+Enterprise integration should make trust more explicit, not broader.
+
+---
+
+## Security Controls Are Also Administrative Assets
+
+The controls introduced during the acquisition can themselves become targets.
+
+Examples include:
+
+- Azure Policy definitions and assignments.
+- Sentinel configuration.
+- Log Analytics configuration.
+- AWS CloudTrail.
+- CloudTrail log storage.
+- AWS KMS.
+- OCI Vault.
+- OCI IAM policies.
+- Terraform state and deployment credentials.
+
+An identity capable of disabling logging, changing a guardrail, weakening key policy, or altering the infrastructure definition may have more security impact than an identity operating an ordinary workload.
+
+Administrative access to the security control plane therefore needs its own protection.
+
+The team subject to a security control should not automatically have unrestricted authority to disable the control or erase the evidence it produces.
+
+---
+
+## The Target State Is a Security Decision
+
+Not every inherited workload has to reach the same destination.
+
+After discovery, risk reduction, and stabilization, workloads may be:
+
+- Retained.
+- Modernized.
+- Migrated.
+- Consolidated.
+- Replatformed.
+- Retired.
+
+The security architecture supports that decision rather than assuming the answer in advance.
+
+A workload retained in AWS can still meet enterprise security requirements.
+
+An OCI workload does not necessarily need to move to Azure simply because Azure is the acquiring organization's primary platform.
+
+Conversely, preserving an inherited platform should not be used as a reason to preserve unnecessary inherited security risk.
+
+The decision should consider business value, security exposure, operational dependency, cost, resilience, and long-term ownership.
+
+---
+
+## How Trust Changes During the Acquisition
+
+The overall security transition is not:
+
+**Acquired → Trusted**
+
+It is closer to:
+
+```text
+Acquire
+   ↓
+Discover what exists
+   ↓
+Identify who has authority
+   ↓
+Establish visibility
+   ↓
+Protect critical assets
+   ↓
+Introduce minimum guardrails
+   ↓
+Govern necessary exceptions
+   ↓
+Reduce inherited administrative risk
+   ↓
+Determine the target state
+```
+
+Trust increases as evidence, control, and ownership improve.
+
+The objective is not to make three clouds identical.
+
+It is to reach a point where the enterprise can explain:
+
+**Who administers each environment?**
+
+**Which identities are trusted?**
+
+**Where are security requirements enforced?**
+
+**Who can change those controls?**
+
+**Which deviations have been explicitly accepted?**
+
+**What evidence exists when something goes wrong?**
+
+That is the security boundary created by M&A integration.
